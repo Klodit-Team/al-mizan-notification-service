@@ -1,0 +1,38 @@
+# Job Kubernetes : exécute prisma migrate deploy avant le démarrage
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notification-service-migrate
+  namespace: al-mizan
+  labels:
+    app: notification-service
+    job-type: migration
+  annotations:
+    # helm.sh/hook: pre-install,pre-upgrade
+    # helm.sh/hook-weight: "0"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: notification-service-migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: harbor.almizan.dz/al-mizan/notification-service:latest
+          command: ["sh", "-c", "npx prisma migrate deploy"]
+          envFrom:
+            - configMapRef:
+                name: notification-service-config
+            - secretRef:
+                name: notification-service-secret
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      imagePullSecrets:
+        - name: harbor-registry-secret

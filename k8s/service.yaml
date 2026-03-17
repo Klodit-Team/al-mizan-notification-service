@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: al-mizan
+  labels:
+    app: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8010
+      targetPort: 8010
+  type: ClusterIP

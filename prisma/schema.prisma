@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TypeNotification {
+  EMAIL
+  SMS
+  PUSH
+  PLATEFORME
+}
+
+enum CategorieNotification {
+  PUBLICATION
+  DEPOT
+  OUVERTURE
+  EVALUATION
+  ATTRIBUTION
+  RECOURS
+  SYSTEME
+  IA_DIVERGENCE
+  IA_ERREUR
+}
+
+enum StatutNotification {
+  EN_ATTENTE
+  ENVOYE
+  ECHEC
+  LU
+}
+
+enum NiveauUrgenceAlerte {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum TypeAlerteIA {
+  DIVERGENCE_GRE_A_GRE
+  DIVERGENCE_EVALUATION
+  CONFIANCE_FAIBLE
+  ERREUR_MODELE
+  ANOMALIE_OFFRES
+}
+
+enum StatutAlerte {
+  EMISE
+  ACQUITTEE
+  RESOLUE
+}
+
+enum TypeRapportIA {
+  QUOTIDIEN
+  HEBDOMADAIRE
+  MENSUEL
+  INCIDENT
+}
+
+enum StatutRapport {
+  GENERE
+  ENVOYE
+}
+
+model Notification {
+  id          String                @id @default(uuid()) @db.Char(36)
+  userId      String                @map("user_id") @db.Char(36)
+  titre       String                @db.VarChar(255)
+  contenu     String                @db.Text
+  type        TypeNotification
+  categorie   CategorieNotification
+  statut      StatutNotification    @default(EN_ATTENTE)
+  isLue       Boolean               @default(false) @map("is_lue")
+  dateEnvoi   DateTime?             @map("date_envoi")
+  dateLecture DateTime?             @map("date_lecture")
+
+  // Metadata de livraison
+  destinataire  String?   @db.VarChar(255) // email, phone, FCM token
+  messageId     String?   @map("message_id") @db.VarChar(255) // ID externe (email/SMS provider)
+  tentatives    Int       @default(0)
+  erreurDetails String?   @map("erreur_details") @db.Text
+
+  // Référence métier (optionnel – pour traçabilité)
+  refEntiteId   String? @map("ref_entite_id") @db.Char(36)
+  refEntiteType String? @map("ref_entite_type") @db.VarChar(100)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([statut])
+  @@index([categorie])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AlerteIA {
+  id               String              @id @default(uuid()) @db.Char(36)
+  incidentId       String              @map("incident_id") @db.Char(36)
+  utilisateursCibles Json              @map("utilisateurs_cibles") // string[]
+  titre            String              @db.VarChar(255)
+  message          String              @db.Text
+  niveauUrgence    NiveauUrgenceAlerte @map("niveau_urgence")
+  typeAlerte       TypeAlerteIA        @map("type_alerte")
+  donneesContexte  Json?               @map("donnees_contexte")
+  statut           StatutAlerte        @default(EMISE)
+  dateCreation     DateTime            @default(now()) @map("date_creation")
+  dateAcquittement DateTime?           @map("date_acquittement")
+  acquitteePar     String?             @map("acquittee_par") @db.Char(36)
+
+  @@index([incidentId])
+  @@index([statut])
+  @@index([niveauUrgence])
+  @@map("alertes_ia")
+}
+
+model RapportIA {
+  id               String        @id @default(uuid()) @db.Char(36)
+  typeRapport      TypeRapportIA @map("type_rapport")
+  periodDebut      DateTime      @map("periode_debut")
+  periodeFin       DateTime      @map("periode_fin")
+  destinataires    Json          // string[] – IDs utilisateurs (admin, contrôleur)
+  statistiques     Json          // { totalNotifs, tauxSucces, divergences, erreurs, ... }
+  divergencesCount Int           @default(0) @map("divergences_count")
+  erreursCount     Int           @default(0) @map("erreurs_count")
+  tauxPrecision    Decimal       @default(0) @map("taux_precision") @db.Decimal(5, 2)
+  fichierRapportUrl String?      @map("fichier_rapport_url") @db.VarChar(500)
+  statut           StatutRapport @default(GENERE)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  sentAt           DateTime?     @map("sent_at")
+
+  @@index([typeRapport])
+  @@index([statut])
+  @@map("rapports_ia")
+}
+
+model PreferenceNotification {
+  id            String  @id @default(uuid()) @db.Char(36)
+  userId        String  @unique @map("user_id") @db.Char(36)
+  emailActif    Boolean @default(true) @map("email_actif")
+  smsActif      Boolean @default(true) @map("sms_actif")
+  pushActif     Boolean @default(true) @map("push_actif")
+  plateformeActif Boolean @default(true) @map("plateforme_actif")
+
+  // Catégories optout
+  optoutCategories Json @default("[]") @map("optout_categories") // CategorieNotification[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("preferences_notification")
+}
+
+model TokenFCM {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  token     String   @db.VarChar(512)
+  deviceId  String?  @map("device_id") @db.VarChar(255)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("tokens_fcm")
+}

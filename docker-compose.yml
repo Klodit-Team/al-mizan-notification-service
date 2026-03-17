@@ -1,0 +1,126 @@
+version: '3.9'
+
+services:
+
+  # ── Application NestJS ───────────────────────────────────────────────────
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder          
+    container_name: notification-service
+    command: yarn start:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '8010:8010'
+    environment:
+      NODE_ENV: development
+      PORT: 8010
+      API_PREFIX: notification-service/v1
+      DATABASE_URL: postgresql://notif_user:notif_password@postgres:5432/notif_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: al_mizan_events
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - al_mizan_network
+    restart: unless-stopped
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: notif-postgres
+    environment:
+      POSTGRES_DB: notif_db
+      POSTGRES_USER: notif_user
+      POSTGRES_PASSWORD: notif_password
+    ports:
+      - '5437:5432'      
+    volumes:
+      - notif_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U notif_user -d notif_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - al_mizan_network
+    restart: unless-stopped
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: notif-redis
+    ports:
+      - '6382:6379'     
+    volumes:
+      - notif_redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - al_mizan_network
+    restart: unless-stopped
+
+  # ── RabbitMQ ─────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: notif-rabbitmq
+    ports:
+      - '5672:5672'         
+      - '15672:15672'         
+    volumes:
+      - notif_rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - al_mizan_network
+    restart: unless-stopped
+
+  # ── pgAdmin ──────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: notif-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@almizan.dz
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - '5051:80'             
+    depends_on:
+      - postgres
+    networks:
+      - al_mizan_network
+    restart: unless-stopped
+    profiles:
+      - tools                
+
+volumes:
+  notif_postgres_data:
+  notif_redis_data:
+  notif_rabbitmq_data:
+
+networks:
+  al_mizan_network:
+    name: al_mizan_network
+    driver: bridge
+    external: true          

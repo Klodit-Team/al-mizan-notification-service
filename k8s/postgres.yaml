@@ -1,0 +1,80 @@
+# ── PostgreSQL dédié au notification-service ─────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notif-postgres
+  namespace: al-mizan
+  labels:
+    app: notif-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notif-postgres
+  template:
+    metadata:
+      labels:
+        app: notif-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: notif_db
+            - name: POSTGRES_USER
+              value: notif_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notification-service-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "notif_user", "-d", "notif_db"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: notif-postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notif-postgres-pvc
+  namespace: al-mizan
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notif-postgres-service
+  namespace: al-mizan
+  labels:
+    app: notif-postgres
+spec:
+  selector:
+    app: notif-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
