@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export interface SendPushPayload {
-  tokens: string[];        
+  tokens: string[];
   title: string;
   body: string;
   data?: Record<string, string>;
@@ -133,9 +133,7 @@ export class PushChannelService implements OnModuleInit {
             ) {
               invalidTokens.push(batch[idx]);
             }
-            this.logger.warn(
-              `Token FCM invalide [${batch[idx]}] : ${resp.error?.message}`,
-            );
+            this.logger.warn(`Token FCM invalide [${batch[idx]}] : ${resp.error?.message}`);
           }
         });
 
@@ -157,7 +155,12 @@ export class PushChannelService implements OnModuleInit {
   }
 
   /** Envoyer à un seul token */
-  async sendToToken(token: string, title: string, body: string, data?: Record<string, string>): Promise<boolean> {
+  async sendToToken(
+    token: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ): Promise<boolean> {
     const result = await this.send({ tokens: [token], title, body, data });
     return result.successCount > 0;
   }

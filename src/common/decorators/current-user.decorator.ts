@@ -12,7 +12,11 @@ export const CurrentUser = createParamDecorator(
     const rolesHeader = request.headers['x-user-roles'] as string;
     let roles: string[] = [];
     if (rolesHeader) {
-      try { roles = JSON.parse(rolesHeader); } catch { roles = [rolesHeader]; }
+      try {
+        roles = JSON.parse(rolesHeader);
+      } catch {
+        roles = [rolesHeader];
+      }
     }
     return { id: userId, roles };
   },

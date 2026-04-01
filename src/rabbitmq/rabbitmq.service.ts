@@ -19,7 +19,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.channel?.close();
       await this.connection?.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     this.logger.log('RabbitMQ déconnecté');
   }
 
@@ -48,12 +50,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
   async publish(routingKey: string, payload: object): Promise<void> {
     if (!this.channel) return;
-    this.channel.publish(
-      RABBITMQ_EXCHANGE,
-      routingKey,
-      Buffer.from(JSON.stringify(payload)),
-      { persistent: true, contentType: 'application/json', timestamp: Date.now() },
-    );
+    this.channel.publish(RABBITMQ_EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), {
+      persistent: true,
+      contentType: 'application/json',
+      timestamp: Date.now(),
+    });
     this.logger.debug(`[${routingKey}]`);
   }
 

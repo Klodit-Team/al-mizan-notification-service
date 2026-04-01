@@ -17,7 +17,11 @@ export class RolesGuard implements CanActivate {
     const rolesHeader = request.headers['x-user-roles'] as string;
     let userRoles: string[] = [];
     if (rolesHeader) {
-      try { userRoles = JSON.parse(rolesHeader); } catch { userRoles = [rolesHeader]; }
+      try {
+        userRoles = JSON.parse(rolesHeader);
+      } catch {
+        userRoles = [rolesHeader];
+      }
     }
     if (!userRoles.some((r) => required.includes(r))) {
       throw new ForbiddenException(`Accès refusé. Rôles requis : ${required.join(', ')}`);

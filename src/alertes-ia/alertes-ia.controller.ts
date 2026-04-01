@@ -1,5 +1,17 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, ParseUUIDPipe, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  Query,
+  ParseUUIDPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiSecurity, ApiParam } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AlertesIAService } from './alertes-ia.service';
 import { CreateAlerteIADto, FilterAlerteIADto, AcquitterAlerteDto } from './dto';
@@ -32,7 +44,7 @@ export class AlertesIAController {
 
   @Get(':id')
   @Roles('ADMIN', 'CONTROLEUR')
-  @ApiOperation({ summary: 'Détail d\'une alerte IA' })
+  @ApiOperation({ summary: "Détail d'une alerte IA" })
   @ApiParam({ name: 'id', type: String })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findById(id);

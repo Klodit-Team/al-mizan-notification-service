@@ -1,14 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsString, IsNotEmpty, IsOptional, IsArray, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AlerteIAType, NiveauUrgence } from '../../common/prisma-enums';
 
 export class CreateAlerteIADto {
-  @ApiPropertyOptional({ description: 'ID de l\'incident source (depuis audit-service)' })
+  @ApiPropertyOptional({ description: "ID de l'incident source (depuis audit-service)" })
   @IsOptional()
   @IsString()
   incidentId?: string;
 
-  @ApiProperty({ description: 'Titre de l\'alerte', example: 'Divergence IA détectée – Gré à gré' })
+  @ApiProperty({ description: "Titre de l'alerte", example: 'Divergence IA détectée – Gré à gré' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -20,11 +28,11 @@ export class CreateAlerteIADto {
   @MinLength(10)
   message: string;
 
-  @ApiProperty({ enum: AlerteIAType, description: 'Type d\'alerte IA' })
+  @ApiProperty({ enum: AlerteIAType, description: "Type d'alerte IA" })
   @IsEnum(AlerteIAType)
   typeAlerte: AlerteIAType;
 
-  @ApiProperty({ enum: NiveauUrgence, description: 'Niveau d\'urgence' })
+  @ApiProperty({ enum: NiveauUrgence, description: "Niveau d'urgence" })
   @IsEnum(NiveauUrgence)
   niveauUrgence: NiveauUrgence;
 

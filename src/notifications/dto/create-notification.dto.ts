@@ -11,27 +11,46 @@ import {
 import { NotificationType, NotificationCategory } from '../../common/prisma-enums';
 
 export class CreateNotificationDto {
-  @ApiProperty({ description: "ID de l'utilisateur destinataire (UUID)", example: '550e8400-e29b-41d4-a716-446655440001' })
+  @ApiProperty({
+    description: "ID de l'utilisateur destinataire (UUID)",
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
   @IsUUID()
   userId: string;
 
-  @ApiProperty({ description: 'Titre de la notification', maxLength: 255, example: 'Attribution provisoire prononcée' })
+  @ApiProperty({
+    description: 'Titre de la notification',
+    maxLength: 255,
+    example: 'Attribution provisoire prononcée',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   titre: string;
 
-  @ApiProperty({ description: 'Contenu de la notification', minLength: 5, example: 'Votre offre a été retenue...' })
+  @ApiProperty({
+    description: 'Contenu de la notification',
+    minLength: 5,
+    example: 'Votre offre a été retenue...',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
   contenu: string;
 
-  @ApiProperty({ enum: NotificationType, description: 'Canal de diffusion', example: NotificationType.EMAIL })
+  @ApiProperty({
+    enum: NotificationType,
+    description: 'Canal de diffusion',
+    example: NotificationType.EMAIL,
+  })
   @IsEnum(NotificationType)
   type: NotificationType;
 
-  @ApiProperty({ enum: NotificationCategory, description: 'Catégorie métier', example: NotificationCategory.ATTRIBUTION })
+  @ApiProperty({
+    enum: NotificationCategory,
+    description: 'Catégorie métier',
+    example: NotificationCategory.ATTRIBUTION,
+  })
   @IsEnum(NotificationCategory)
   categorie: NotificationCategory;
 

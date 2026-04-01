@@ -9,7 +9,7 @@ export class DeviceTokensRepository {
     // Le modèle Prisma s'appelle tokenFCM (pas deviceToken)
     // Le champ s'appelle isActive (pas isActif)
     return this.prisma['tokenFCM'].upsert({
-      where:  { userId_token: { userId, token } },
+      where: { userId_token: { userId, token } },
       update: { isActive: true, updatedAt: new Date(), ...(deviceId && { deviceId }) },
       create: { userId, token, deviceId: deviceId ?? null, isActive: true },
     });
@@ -21,7 +21,7 @@ export class DeviceTokensRepository {
 
   async findByUserId(userId: string): Promise<any[]> {
     return this.prisma['tokenFCM'].findMany({
-      where:   { userId },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -33,7 +33,7 @@ export class DeviceTokensRepository {
   async deactivateTokens(tokens: string[]): Promise<void> {
     await this.prisma['tokenFCM'].updateMany({
       where: { token: { in: tokens } },
-      data:  { isActive: false },
+      data: { isActive: false },
     });
   }
 

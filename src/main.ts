@@ -37,9 +37,7 @@ async function bootstrap() {
 
   if (nodeEnv !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle(
-        configService.get<string>('SWAGGER_TITLE', 'Al-Mizan – Service Notifications'),
-      )
+      .setTitle(configService.get<string>('SWAGGER_TITLE', 'Al-Mizan – Service Notifications'))
       .setDescription(
         configService.get<string>(
           'SWAGGER_DESCRIPTION',
@@ -53,10 +51,7 @@ async function bootstrap() {
       .addTag('tokens-fcm', 'Gestion des tokens Firebase Cloud Messaging')
       .addTag('preferences', 'Préférences de notification utilisateur')
       .addTag('health', 'Health check')
-      .addApiKey(
-        { type: 'apiKey', name: 'x-user-id', in: 'header' },
-        'x-user-id',
-      )
+      .addApiKey({ type: 'apiKey', name: 'x-user-id', in: 'header' }, 'x-user-id')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -64,17 +59,11 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
 
-    Logger.log(
-      `Swagger disponible : http://localhost:${port}/${apiPrefix}/docs`,
-      'Bootstrap',
-    );
+    Logger.log(`Swagger disponible : http://localhost:${port}/${apiPrefix}/docs`, 'Bootstrap');
   }
 
   await app.listen(port);
-  Logger.log(
-    `Notification Service démarré sur http://localhost:${port}/${apiPrefix}`,
-    'Bootstrap',
-  );
+  Logger.log(`Notification Service démarré sur http://localhost:${port}/${apiPrefix}`, 'Bootstrap');
 }
 
 bootstrap();

@@ -20,10 +20,10 @@ export class NotificationsRepository {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(userId    && { userId }),
-      ...(type      && { type }),
+      ...(userId && { userId }),
+      ...(type && { type }),
       ...(categorie && { categorie }),
-      ...(statut    && { statut }),
+      ...(statut && { statut }),
       ...(isLue !== undefined && { isLue }),
     };
 
@@ -50,7 +50,7 @@ export class NotificationsRepository {
   async markAllAsRead(userId: string): Promise<number> {
     const result = await this.prisma['notification'].updateMany({
       where: { userId, isLue: false },
-      data:  { isLue: true, dateLecture: new Date() },
+      data: { isLue: true, dateLecture: new Date() },
     });
     return result.count;
   }
@@ -66,9 +66,9 @@ export class NotificationsRepository {
         statut,
         // dateEnvoi uniquement quand la notification est effectivement envoyée
         ...(statut === StatutNotification.ENVOYE && { dateEnvoi: new Date() }),
-        ...(extra?.messageId  && { messageId:    extra.messageId }),
+        ...(extra?.messageId && { messageId: extra.messageId }),
         // erreurDetails est le vrai nom du champ Prisma (pas dernierErreur)
-        ...(extra?.erreur     && { erreurDetails: extra.erreur   }),
+        ...(extra?.erreur && { erreurDetails: extra.erreur }),
         ...(extra?.tentatives !== undefined && { tentatives: extra.tentatives }),
       },
     });
@@ -81,7 +81,7 @@ export class NotificationsRepository {
   async incrementTentatives(id: string): Promise<any> {
     return this.prisma['notification'].update({
       where: { id },
-      data:  { tentatives: { increment: 1 } },
+      data: { tentatives: { increment: 1 } },
     });
   }
 }

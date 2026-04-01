@@ -8,7 +8,10 @@ export class RegisterDeviceTokenDto {
   @MaxLength(512)
   token: string;
 
-  @ApiPropertyOptional({ description: 'Identifiant unique du device', example: 'android-uuid-abc123' })
+  @ApiPropertyOptional({
+    description: 'Identifiant unique du device',
+    example: 'android-uuid-abc123',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)

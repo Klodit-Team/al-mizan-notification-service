@@ -11,13 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiSecurity,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, FilterNotificationDto } from './dto';
@@ -55,11 +49,8 @@ export class NotificationsController {
 
   @Get('mes-notifications')
   @ApiOperation({ summary: 'Mes notifications (utilisateur connecté)' })
-  @ApiResponse({ status: 200, description: 'Notifications de l\'utilisateur courant' })
-  async findMine(
-    @CurrentUser() user: { id: string },
-    @Query() filter: FilterNotificationDto,
-  ) {
+  @ApiResponse({ status: 200, description: "Notifications de l'utilisateur courant" })
+  async findMine(@CurrentUser() user: { id: string }, @Query() filter: FilterNotificationDto) {
     return this.notificationsService.findMyNotifications(user.id, filter);
   }
 
@@ -93,11 +84,7 @@ export class NotificationsController {
   @ApiParam({ name: 'id', type: String, description: 'UUID de la notification' })
   @ApiResponse({ status: 200, description: 'Notification marquée comme lue' })
   @ApiResponse({ status: 404, description: 'Notification introuvable' })
-  async markAsRead(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string },
-  ) {
+  async markAsRead(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: { id: string }) {
     return this.notificationsService.markAsRead(id, user.id);
   }
 }
-

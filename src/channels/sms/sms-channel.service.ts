@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 const OPERATEUR_PREFIXES: Record<string, string[]> = {
-  djezzy:  ['077', '078', '079'],
+  djezzy: ['077', '078', '079'],
   ooredoo: ['055', '056', '057'],
   mobilis: ['060', '061', '066', '067', '068', '069'],
 };
@@ -11,7 +11,7 @@ const OPERATEUR_PREFIXES: Record<string, string[]> = {
 export type Operateur = 'djezzy' | 'ooredoo' | 'mobilis' | 'inconnu';
 
 export interface SendSmsPayload {
-  to: string;    
+  to: string;
   message: string;
 }
 
@@ -32,8 +32,8 @@ export class SmsChannelService {
   normalizeAlgerianPhone(numero: string): string {
     const clean = numero.replace(/\s+/g, '').replace(/-/g, '');
     if (clean.startsWith('+213')) return clean;
-    if (clean.startsWith('213'))  return `+${clean}`;
-    if (clean.startsWith('0'))    return `+213${clean.slice(1)}`;
+    if (clean.startsWith('213')) return `+${clean}`;
+    if (clean.startsWith('0')) return `+213${clean.slice(1)}`;
     return `+213${clean}`;
   }
 
@@ -41,8 +41,8 @@ export class SmsChannelService {
   detectOperateur(numero: string): Operateur {
     const normalized = this.normalizeAlgerianPhone(numero);
     // +213 0XXXXXXXX → préfixe = 0 + digits 4-6
-    const localPart = '0' + normalized.slice(4);   // ex: 0770123456
-    const prefix3 = localPart.slice(0, 3);          // ex: 077
+    const localPart = '0' + normalized.slice(4); // ex: 0770123456
+    const prefix3 = localPart.slice(0, 3); // ex: 077
 
     for (const [op, prefixes] of Object.entries(OPERATEUR_PREFIXES)) {
       if (prefixes.includes(prefix3)) return op as Operateur;
@@ -79,9 +79,9 @@ export class SmsChannelService {
   }
 
   private async sendViaInfoBip(to: string, message: string): Promise<{ messageId: string }> {
-    const apiKey  = this.configService.get<string>('INFOBIP_API_KEY');
+    const apiKey = this.configService.get<string>('INFOBIP_API_KEY');
     const baseUrl = this.configService.get<string>('INFOBIP_BASE_URL', 'https://api.infobip.com');
-    const sender  = this.configService.get<string>('INFOBIP_SENDER', 'ALMIZAN');
+    const sender = this.configService.get<string>('INFOBIP_SENDER', 'ALMIZAN');
 
     if (!apiKey) throw new Error('INFOBIP_API_KEY non configurée');
 
@@ -105,8 +105,8 @@ export class SmsChannelService {
 
   private async sendViaTwilio(to: string, message: string): Promise<{ messageId: string }> {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-    const authToken  = this.configService.get<string>('TWILIO_AUTH_TOKEN');
-    const from       = this.configService.get<string>('TWILIO_FROM_NUMBER', '');
+    const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    const from = this.configService.get<string>('TWILIO_FROM_NUMBER', '');
 
     if (!accountSid || !authToken) throw new Error('Twilio credentials manquants');
 

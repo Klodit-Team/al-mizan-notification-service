@@ -85,9 +85,7 @@ export class RecoursEventsConsumer implements OnModuleInit {
   private async handleStatue(payload: any): Promise<void> {
     const { recoursId, reference, operateurId, decision, motifDecision } = payload;
     const titre =
-      decision === 'ACCEPTE'
-        ? `Recours accepté – ${reference}`
-        : `Recours rejeté – ${reference}`;
+      decision === 'ACCEPTE' ? `Recours accepté – ${reference}` : `Recours rejeté – ${reference}`;
     await this.notificationsService.createAndDispatch({
       userId: operateurId,
       titre,

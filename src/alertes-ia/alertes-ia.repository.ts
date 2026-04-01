@@ -20,9 +20,9 @@ export class AlertesIARepository {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(typeAlerte    && { typeAlerte }),
+      ...(typeAlerte && { typeAlerte }),
       ...(niveauUrgence && { niveauUrgence }),
-      ...(statut        && { statut }),
+      ...(statut && { statut }),
     };
 
     const [data, total] = await Promise.all([

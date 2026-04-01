@@ -10,10 +10,10 @@ describe('Notification Service (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
-  const ADMIN_ID   = '550e8400-e29b-41d4-a716-446655440001';
-  const USER_ID    = '550e8400-e29b-41d4-a716-446655440002';
+  const ADMIN_ID = '550e8400-e29b-41d4-a716-446655440001';
+  const USER_ID = '550e8400-e29b-41d4-a716-446655440002';
   const ADMIN_ROLES = JSON.stringify(['ADMIN']);
-  const USER_ROLES  = JSON.stringify(['OPERATEUR_ECONOMIQUE']);
+  const USER_ROLES = JSON.stringify(['OPERATEUR_ECONOMIQUE']);
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -59,7 +59,13 @@ describe('Notification Service (e2e)', () => {
         .post('/notification-service/v1/notifications')
         .set('x-user-id', ADMIN_ID)
         .set('x-user-roles', ADMIN_ROLES)
-        .send({ userId: USER_ID, titre: '', contenu: 'Test', type: 'PLATEFORME', categorie: 'SYSTEME' })
+        .send({
+          userId: USER_ID,
+          titre: '',
+          contenu: 'Test',
+          type: 'PLATEFORME',
+          categorie: 'SYSTEME',
+        })
         .expect(400);
     });
 
@@ -68,7 +74,13 @@ describe('Notification Service (e2e)', () => {
         .post('/notification-service/v1/notifications')
         .set('x-user-id', USER_ID)
         .set('x-user-roles', USER_ROLES)
-        .send({ userId: USER_ID, titre: 'Test', contenu: 'Contenu test ok', type: 'PLATEFORME', categorie: 'SYSTEME' })
+        .send({
+          userId: USER_ID,
+          titre: 'Test',
+          contenu: 'Contenu test ok',
+          type: 'PLATEFORME',
+          categorie: 'SYSTEME',
+        })
         .expect(403);
     });
   });
@@ -101,7 +113,7 @@ describe('Notification Service (e2e)', () => {
   });
 
   describe('GET /notification-service/v1/device-tokens', () => {
-    it('200 – liste les tokens de l\'utilisateur', async () => {
+    it("200 – liste les tokens de l'utilisateur", async () => {
       const res = await request(app.getHttpServer())
         .get('/notification-service/v1/device-tokens')
         .set('x-user-id', USER_ID)

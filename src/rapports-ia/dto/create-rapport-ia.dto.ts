@@ -1,7 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsEnum, IsArray, IsString, IsNotEmpty, IsOptional,
-  IsDateString, IsInt, Min, Max, IsNumber,
+  IsEnum,
+  IsArray,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TypeRapport } from '../../common/prisma-enums';
@@ -11,7 +19,10 @@ export class CreateRapportIADto {
   @IsEnum(TypeRapport)
   typeRapport: TypeRapport;
 
-  @ApiProperty({ description: 'Début de la période (ISO 8601)', example: '2026-03-01T00:00:00.000Z' })
+  @ApiProperty({
+    description: 'Début de la période (ISO 8601)',
+    example: '2026-03-01T00:00:00.000Z',
+  })
   @IsDateString()
   periodeDebut: string;
 
@@ -34,7 +45,7 @@ export class CreateRapportIADto {
   @Type(() => Number)
   divergencesCount: number;
 
-  @ApiProperty({ description: 'Nombre d\'erreurs IA', minimum: 0 })
+  @ApiProperty({ description: "Nombre d'erreurs IA", minimum: 0 })
   @IsInt()
   @Min(0)
   @Type(() => Number)

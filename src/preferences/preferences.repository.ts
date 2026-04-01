@@ -11,14 +11,14 @@ export class PreferencesRepository {
 
   async upsert(userId: string, data: any): Promise<any> {
     return this.prisma['preferenceNotification'].upsert({
-      where:  { userId },
+      where: { userId },
       update: data,
       create: {
         userId,
-        emailActif:       data.emailActif       ?? true,
-        smsActif:         data.smsActif         ?? true,
-        pushActif:        data.pushActif         ?? true,
-        plateformeActif:  data.plateformeActif   ?? true,
+        emailActif: data.emailActif ?? true,
+        smsActif: data.smsActif ?? true,
+        pushActif: data.pushActif ?? true,
+        plateformeActif: data.plateformeActif ?? true,
         // optoutCategories est le vrai nom du champ Prisma (pas categoriesDesactivees)
         optoutCategories: data.categoriesDesactivees ?? [],
       },

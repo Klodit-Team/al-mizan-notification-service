@@ -1,6 +1,14 @@
 import {
-  Controller, Get, Post, Param, Body, Query,
-  UseGuards, HttpCode, HttpStatus, ParseUUIDPipe,
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -36,7 +44,7 @@ export class RapportsIAController {
 
   @Get(':id')
   @Roles('ADMIN', 'CONTROLEUR')
-  @ApiOperation({ summary: 'Détail d\'un rapport IA' })
+  @ApiOperation({ summary: "Détail d'un rapport IA" })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Rapport trouvé' })
   @ApiResponse({ status: 404, description: 'Rapport introuvable' })

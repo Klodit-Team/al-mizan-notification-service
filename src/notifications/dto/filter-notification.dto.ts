@@ -1,7 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsUUID, IsBoolean, IsInt, Min, Max } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { NotificationType, NotificationCategory, NotificationStatut } from '../../common/prisma-enums';
+import {
+  NotificationType,
+  NotificationCategory,
+  NotificationStatut,
+} from '../../common/prisma-enums';
 
 export class FilterNotificationDto {
   @ApiPropertyOptional({ description: 'Filtrer par utilisateur (UUID)' })

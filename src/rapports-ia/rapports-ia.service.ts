@@ -35,14 +35,20 @@ export class RapportsIAService {
     return rapport;
   }
 
-  private async sendRapportToDestinataires(rapportId: string, dto: CreateRapportIADto): Promise<void> {
+  private async sendRapportToDestinataires(
+    rapportId: string,
+    dto: CreateRapportIADto,
+  ): Promise<void> {
     const rapport = await this.repo.findById(rapportId);
     if (!rapport) return;
 
     const titre = `Rapport IA Al-Mizan – ${dto.typeRapport} (${new Date(dto.periodeDebut).toLocaleDateString('fr-DZ')} → ${new Date(dto.periodeFin).toLocaleDateString('fr-DZ')})`;
 
     const statsHtml = Object.entries(dto.statistiques)
-      .map(([k, v]) => `<tr><td style="padding:4px 12px;color:#475569;">${k}</td><td style="padding:4px 12px;font-weight:600;">${v}</td></tr>`)
+      .map(
+        ([k, v]) =>
+          `<tr><td style="padding:4px 12px;color:#475569;">${k}</td><td style="padding:4px 12px;font-weight:600;">${v}</td></tr>`,
+      )
       .join('');
 
     const html = this.emailService.buildHtml(
@@ -89,7 +95,9 @@ export class RapportsIAService {
         typeRapport: dto.typeRapport,
         destinataires: dto.destinataires,
       });
-      this.logger.log(`Rapport IA ${rapportId} envoyé à ${dto.destinataires.length} destinataire(s)`);
+      this.logger.log(
+        `Rapport IA ${rapportId} envoyé à ${dto.destinataires.length} destinataire(s)`,
+      );
     } else {
       await this.repo.markAsFailed(rapportId);
     }

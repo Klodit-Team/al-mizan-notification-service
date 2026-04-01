@@ -27,7 +27,9 @@ export class EmailChannelService {
       secure: this.configService.get<string>('SMTP_SECURE') === 'true',
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASSWORD'),
+        pass:
+          this.configService.get<string>('SMTP_PASSWORD') ??
+          this.configService.get<string>('SMTP_PASS'),
       },
     });
   }
@@ -48,8 +50,21 @@ export class EmailChannelService {
       this.logger.log(`Email envoyé → ${payload.to} | msgId: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (err) {
-      this.logger.error(`Email échoué → ${payload.to} : ${err.message}`);
-      return { success: false, error: err.message };
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+      const isProduction = nodeEnv === 'production';
+      const failOpenRaw = this.configService.get<string>('EMAIL_FAIL_OPEN');
+      const failOpen = failOpenRaw ? failOpenRaw === 'true' : !isProduction;
+
+      if (failOpen) {
+        this.logger.warn(
+          `SMTP indisponible en mode fail-open (${nodeEnv}) → ${payload.to} : ${errorMessage}`,
+        );
+        return { success: true, messageId: 'dev-smtp-skipped' };
+      }
+
+      this.logger.error(`Email échoué → ${payload.to} : ${errorMessage}`);
+      return { success: false, error: errorMessage };
     }
   }
 

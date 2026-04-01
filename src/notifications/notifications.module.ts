@@ -7,9 +7,11 @@ import { SmsChannelModule } from '../channels/sms/sms-channel.module';
 import { PushChannelModule } from '../channels/push/push-channel.module';
 import { DeviceTokensModule } from '../device-tokens/device-tokens.module';
 import { PreferencesModule } from '../preferences/preferences.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
+    RedisModule, // ← was missing, RedisService needed by NotificationsService
     EmailChannelModule,
     SmsChannelModule,
     PushChannelModule,

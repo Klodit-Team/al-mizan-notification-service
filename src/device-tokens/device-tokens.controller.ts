@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { DeviceTokensService } from './device-tokens.service';
@@ -32,10 +43,7 @@ export class DeviceTokensController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Désactiver un token FCM' })
   @ApiParam({ name: 'id', type: String })
-  deactivate(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string },
-  ) {
+  deactivate(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: { id: string }) {
     return this.service.deactivate(id, user.id);
   }
 }

@@ -9,7 +9,7 @@ import { NotificationType, StatutNotification } from '../common/prisma-enums';
 import { DeviceTokensRepository } from '../device-tokens/device-tokens.repository';
 import { PreferencesRepository } from '../preferences/preferences.repository';
 
-export interface DispatchPayload extends CreateNotificationDto {}
+export type DispatchPayload = CreateNotificationDto;
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -55,15 +55,15 @@ export class NotificationsService {
     }
 
     const notification = await this.repo.create({
-      userId:       dto.userId,
-      titre:        dto.titre,
-      contenu:      dto.contenu,
-      type:         dto.type,
-      categorie:    dto.categorie,
-      statut:       StatutNotification.EN_ATTENTE,
+      userId: dto.userId,
+      titre: dto.titre,
+      contenu: dto.contenu,
+      type: dto.type,
+      categorie: dto.categorie,
+      statut: StatutNotification.EN_ATTENTE,
       destinataire: dto.destinataire ?? null,
       refEntiteType: dto.entiteType ?? null,
-      refEntiteId:   dto.entiteId   ?? null,
+      refEntiteId: dto.entiteId ?? null,
     });
 
     // Dispatch asynchrone — ne bloque pas la réponse HTTP
@@ -74,15 +74,15 @@ export class NotificationsService {
 
   async create(dto: CreateNotificationDto) {
     return this.repo.create({
-      userId:       dto.userId,
-      titre:        dto.titre,
-      contenu:      dto.contenu,
-      type:         dto.type,
-      categorie:    dto.categorie,
-      statut:       StatutNotification.EN_ATTENTE,
+      userId: dto.userId,
+      titre: dto.titre,
+      contenu: dto.contenu,
+      type: dto.type,
+      categorie: dto.categorie,
+      statut: StatutNotification.EN_ATTENTE,
       destinataire: dto.destinataire ?? null,
       refEntiteType: dto.entiteType ?? null,
-      refEntiteId:   dto.entiteId   ?? null,
+      refEntiteId: dto.entiteId ?? null,
     });
   }
 
@@ -114,7 +114,7 @@ export class NotificationsService {
   private async dispatchEmail(id: string, dto: DispatchPayload): Promise<void> {
     const html = this.emailService.buildHtml(dto.titre, dto.contenu);
     const result = await this.emailService.send({
-      to:      dto.destinataire ?? `user-${dto.userId}@almizan.dz`,
+      to: dto.destinataire ?? `user-${dto.userId}@almizan.dz`,
       subject: dto.titre,
       html,
     });
@@ -163,12 +163,12 @@ export class NotificationsService {
     const result = await this.pushService.send({
       tokens,
       title: dto.titre,
-      body:  dto.contenu,
-      data:  {
+      body: dto.contenu,
+      data: {
         notificationId: id,
-        categorie:      dto.categorie,
-        entiteType:     dto.entiteType ?? '',
-        entiteId:       dto.entiteId   ?? '',
+        categorie: dto.categorie,
+        entiteType: dto.entiteType ?? '',
+        entiteId: dto.entiteId ?? '',
       },
     });
 
@@ -196,9 +196,9 @@ export class NotificationsService {
     if (!pref) return true; // pas de préférences = tout activé
 
     const canalMap: Record<string, boolean> = {
-      EMAIL:      pref.emailActif,
-      SMS:        pref.smsActif,
-      PUSH:       pref.pushActif,
+      EMAIL: pref.emailActif,
+      SMS: pref.smsActif,
+      PUSH: pref.pushActif,
       PLATEFORME: pref.plateformeActif,
     };
 
@@ -213,7 +213,7 @@ export class NotificationsService {
 
   async findAll(filter: FilterNotificationDto): Promise<PaginatedResult<any>> {
     const { data, total } = await this.repo.findAll(filter);
-    const page  = filter.page  ?? 1;
+    const page = filter.page ?? 1;
     const limit = filter.limit ?? 20;
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

@@ -48,7 +48,7 @@ export class AoEventsConsumer implements OnModuleInit {
   }
 
   private async onAoPublie(p: any): Promise<void> {
-    for (const userId of (p.destinataires ?? [])) {
+    for (const userId of p.destinataires ?? []) {
       await this.notificationsService.createAndDispatch({
         userId,
         titre: `Nouvel appel d'offres : ${p.objet}`,
@@ -62,7 +62,7 @@ export class AoEventsConsumer implements OnModuleInit {
   }
 
   private async onAoAnnule(p: any): Promise<void> {
-    for (const userId of (p.destinataires ?? [])) {
+    for (const userId of p.destinataires ?? []) {
       await this.notificationsService.createAndDispatch({
         userId,
         titre: `Annulation : ${p.objet}`,
@@ -76,7 +76,7 @@ export class AoEventsConsumer implements OnModuleInit {
   }
 
   private async onAttributionProvisoire(p: any): Promise<void> {
-    for (const { userId, estRetenu } of (p.soumissionnaires ?? [])) {
+    for (const { userId, estRetenu } of p.soumissionnaires ?? []) {
       await this.notificationsService.createAndDispatch({
         userId,
         titre: estRetenu
@@ -92,7 +92,7 @@ export class AoEventsConsumer implements OnModuleInit {
   }
 
   private async onAttributionDefinitive(p: any): Promise<void> {
-    for (const { userId, estRetenu } of (p.soumissionnaires ?? [])) {
+    for (const { userId, estRetenu } of p.soumissionnaires ?? []) {
       await this.notificationsService.createAndDispatch({
         userId,
         titre: estRetenu

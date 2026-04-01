@@ -81,7 +81,7 @@ export class AlertesIAService {
     return alerte;
   }
 
-  async acquitter(id: string, acquittePar: string, dto: AcquitterAlerteDto) {
+  async acquitter(id: string, acquittePar: string, _dto: AcquitterAlerteDto) {
     await this.findById(id);
     return this.repo.updateStatut(id, AlerteStatut.ACQUITTEE, { acquittePar });
   }

@@ -21,7 +21,7 @@ export class RapportsIARepository {
 
     const where: any = {
       ...(typeRapport && { typeRapport }),
-      ...(statut      && { statut }),
+      ...(statut && { statut }),
     };
 
     const [data, total] = await Promise.all([
@@ -40,7 +40,7 @@ export class RapportsIARepository {
   async markAsSent(id: string): Promise<any> {
     return this.prisma['rapportIA'].update({
       where: { id },
-      data:  { statut: StatutRapport.ENVOYE, sentAt: new Date() },
+      data: { statut: StatutRapport.ENVOYE, sentAt: new Date() },
     });
   }
 
@@ -49,7 +49,7 @@ export class RapportsIARepository {
     // On garde GENERE pour indiquer que le rapport n'a pas été envoyé.
     return this.prisma['rapportIA'].update({
       where: { id },
-      data:  { statut: StatutRapport.GENERE },
+      data: { statut: StatutRapport.GENERE },
     });
   }
 }
