@@ -4,16 +4,19 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const { PrismaClient } = require('@prisma/client');
-const { PrismaPg }     = require('@prisma/adapter-pg');
-const { Pool }         = require('pg');
+const { PrismaMariaDb } = require('@prisma/adapter-mariadb');
 
 import {
   TypeNotification,
   CategorieNotification,
 } from '../src/common/prisma-enums';
 
-const pool    = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be defined');
+}
+
+const adapter = new PrismaMariaDb(connectionString);
 const prisma  = new PrismaClient({ adapter });
 
 async function main() {
@@ -72,5 +75,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
   });

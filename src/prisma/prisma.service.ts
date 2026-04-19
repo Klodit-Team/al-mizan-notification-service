@@ -1,32 +1,29 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(private readonly configService: ConfigService) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaPg } = require('@prisma/adapter-pg');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Pool } = require('pg');
+    const connectionString = configService.get<string>('DATABASE_URL');
+    if (!connectionString) {
+      throw new Error('DATABASE_URL must be defined');
+    }
 
-    const pool = new Pool({
-      connectionString: configService.get<string>('DATABASE_URL'),
-    });
-
-    super({ adapter: new PrismaPg(pool) });
+    super({ adapter: new PrismaMariaDb(connectionString) });
   }
 
   async onModuleInit(): Promise<void> {
     await this.$connect();
-    this.logger.log('Connexion PostgreSQL établie (notif_db)');
+    this.logger.log('Connexion MySQL etablie (notif_db)');
   }
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
-    this.logger.log('Connexion PostgreSQL fermée');
+    this.logger.log('Connexion MySQL fermee');
   }
 
   async cleanDatabase(): Promise<void> {
@@ -36,12 +33,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const tables = [
       'rapports_ia',
       'alertes_ia',
-      'device_tokens',
-      'preferences_notifications',
+      'tokens_fcm',
+      'preferences_notification',
       'notifications',
     ];
-    for (const t of tables) {
-      await this.$executeRawUnsafe(`TRUNCATE TABLE "${t}" RESTART IDENTITY CASCADE`);
+
+    await this.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+      for (const t of tables) {
+        await this.$executeRawUnsafe(`TRUNCATE TABLE \`${t}\``);
+      }
+    } finally {
+      await this.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
     }
   }
 }

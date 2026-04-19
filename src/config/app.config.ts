@@ -17,7 +17,7 @@ export default registerAs('app', () => ({
   },
 
   rabbitmq: {
-    url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
+    url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5673',
     exchange: process.env.RABBITMQ_EXCHANGE || 'al_mizan_events',
     queues: {
       notif: process.env.RABBITMQ_NOTIF_QUEUE || 'notification_queue',
