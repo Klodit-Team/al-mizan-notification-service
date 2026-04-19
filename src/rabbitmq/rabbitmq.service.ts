@@ -26,7 +26,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async connect(): Promise<void> {
-    const url = this.configService.get<string>('RABBITMQ_URL', 'amqp://guest:guest@localhost:5673');
+    const url = this.configService.get<string>('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672');
     let retries = 10;
     while (retries > 0) {
       try {
