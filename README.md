@@ -1,253 +1,241 @@
-# Al-Mizan – Notification Service
+# al-mizan-notification-service
 
-Microservice de gestion des notifications multi-canal de la plateforme **Al-Mizan** (Marchés Publics Algérie).
-
-- **Port** : `8010`
-- **Prefix API** : `/notification-service/v1`
-- **Swagger** : [http://localhost:8010/notification-service/v1/docs](http://localhost:8010/notification-service/v1/docs)
+> **Service de Notifications** — Envoi d'emails transactionnels, notifications push Android (Firebase) et alertes IA pour la plateforme Al-Mizan.
 
 ---
 
-## Fonctionnalités
+## Table des matières
 
-| Canal            | Implémentation                         | Détails                                              |
-| ---------------- | -------------------------------------- | ---------------------------------------------------- |
-| **Email**        | Nodemailer + SMTP                      | Templates HTML responsive bilingue                   |
-| **SMS**          | InfoBip (primaire) + Twilio (fallback) | Djezzy / Ooredoo / Mobilis auto-détecté              |
-| **Push Android** | Firebase Cloud Messaging (FCM)         | Batching 500 tokens, nettoyage auto tokens invalides |
-| **Plateforme**   | Persisté en BDD                        | Lu/non-lu, compteur, marquer tout lu                 |
-| **Alertes IA**   | Email + Push (CRITICAL/ERROR)          | Acquittement, résolution, notes                      |
-| **Rapports IA**  | Email PDF                              | Quotidien / Hebdomadaire / Mensuel                   |
+1. [Aperçu](#aperçu)
+2. [Technologies](#technologies)
+3. [Architecture & Réseau](#architecture--réseau)
+4. [Variables d'environnement](#variables-denvironnement)
+5. [API REST](#api-rest)
+6. [Messagerie RabbitMQ](#messagerie-rabbitmq)
+7. [Commandes utiles](#commandes-utiles)
+8. [Docker](#docker)
 
 ---
 
-## Démarrage rapide
+## Aperçu
 
-### Prérequis
+`al-mizan-notification-service` est le service transversal de notifications de la plateforme Al-Mizan. Il consomme des événements RabbitMQ provenant de tous les autres microservices et envoie des notifications via différents canaux :
 
-- Node.js ≥ 20
-- Yarn ≥ 1.22
-- Docker & Docker Compose
-- (Optionnel) Compte Firebase, InfoBip
+- **Email** (Nodemailer/SMTP) avec templates Handlebars (bilingue FR/AR).
+- **Push Android** (Firebase Admin SDK / FCM).
+- **Alertes IA** : réception et stockage des alertes issues de l'analyse IA (gré-à-gré, conformité).
+- **Préférences** : respect des préférences de notification par utilisateur.
+- **Device Tokens** : gestion des tokens FCM des appareils mobiles.
+- **Rate Limiting** via @nestjs/throttler.
+- **Logging structuré** via Pino (nestjs-pino).
 
-### 1. Démarrer l'infrastructure
+Les queues dédiées par domaine permettent une isolation fine des événements (auth, AO, soumission, évaluation, attribution, recours, IA).
 
-```bash
-# Crée le réseau partagé Al-Mizan (une seule fois)
-docker network create al_mizan_network
+---
 
-# Démarrer PostgreSQL + Redis + RabbitMQ
-docker compose up -d postgres redis rabbitmq
+## Technologies
+
+| Technologie        | Version  | Rôle                                              |
+|--------------------|----------|---------------------------------------------------|
+| Node.js            | 20 LTS   | Runtime                                           |
+| TypeScript         | ^5.7     | Langage                                           |
+| NestJS             | ^10.4    | Framework (modules, DI, microservices)            |
+| Prisma ORM         | 7.1.0    | ORM MySQL (via @prisma/adapter-mariadb)           |
+| MySQL              | 8.x      | Base de données (`notif_db`)                      |
+| Redis (ioredis)    | ^5.4     | Cache sessions / déduplication                    |
+| Nodemailer         | ^6.9     | Envoi d'emails (SMTP)                             |
+| Handlebars         | ^4.7     | Templates HTML des emails (FR/AR)                 |
+| Firebase Admin SDK | ^13.4    | Notifications push Android (FCM)                  |
+| amqplib            | ^0.10    | Client RabbitMQ                                   |
+| amqp-connection-manager | ^4.1 | Reconnexion automatique RabbitMQ              |
+| nestjs-pino        | ^4.4     | Logging structuré JSON (Pino)                     |
+| @nestjs/throttler  | ^6.4     | Rate Limiting                                     |
+| @nestjs/swagger    | ^8.1     | Documentation OpenAPI                             |
+| Jest               | ^29.7    | Tests unitaires & e2e                             |
+
+---
+
+## Architecture & Réseau
+
+```
+[Tous les microservices] ──[events]──► RabbitMQ ──► notification-service (:8010)
+                                                              │
+                                                  ├── MySQL   (mysql:3306 → notif_db)
+                                                  ├── Redis   (redis:6379)
+                                                  ├── SMTP    (email)
+                                                  └── Firebase FCM (push Android)
 ```
 
-### 2. Installer les dépendances
-
-```bash
-yarn install
-```
-
-### 3. Migrations Prisma
-
-```bash
-# Créer et appliquer la migration initiale
-yarn prisma:migrate
-
-# Générer le client Prisma
-yarn prisma:generate
-
-# (Optionnel) Seeder la base avec des données de test
-yarn prisma:seed
-```
-
-## SMS Algérie – Opérateurs supportés
-
-Le service détecte automatiquement l'opérateur à partir du numéro :
-
-| Opérateur   | Préfixes                           |
-| ----------- | ---------------------------------- |
-| **Djezzy**  | 077x, 078x, 079x                   |
-| **Ooredoo** | 055x, 056x, 057x                   |
-| **Mobilis** | 060x, 061x, 066x, 067x, 068x, 069x |
-
-**Fournisseur principal** : [InfoBip](https://www.infobip.com/) (agrégateur supportant tous les opérateurs DZ)  
-**Fallback** : Twilio avec routing international
+- **Port exposé** : `8010`
+- **Réseau Docker** : `al-mizan-network`
+- **Nom du conteneur** : `notification-service`
+- **Swagger UI** : `http://localhost:8010/notification-service/v1/docs`
 
 ---
 
-## RabbitMQ – Consumers & Producers
+## Variables d'environnement
 
-### Consumers (événements reçus des autres services)
+```env
+NODE_ENV=development
+PORT=8010
+API_PREFIX=notification-service/v1
 
-| Queue                           | Routing Keys écoutées                                            | Service source     |
-| ------------------------------- | ---------------------------------------------------------------- | ------------------ |
-| `notification_ao_queue`         | `ao.publie`, `ao.annule`, `ao.attribution.*`                     | ao-service         |
-| `notification_soumission_queue` | `soumission.deposee`, `soumission.rejetee`, `soumission.evaluee` | soumission-service |
-| `notification_evaluation_queue` | `evaluation.*`, `evaluation.ouverture_plis`                      | evaluation-service |
-| `notification_recours_queue`    | `recours.depose`, `recours.en_examen`, `recours.statue`          | recours-service    |
-| `notification_auth_queue`       | `auth.user.inscrit`, `auth.user.connexion_suspecte`              | auth-service       |
-| `notification_ia_queue`         | `ia.alerte`, `ia.divergence`, `ia.erreur`                        | ia-services        |
+# MySQL
+DATABASE_URL=mysql://root@localhost:3306/notif_db
 
-### Producers (événements émis par ce service)
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6382
+REDIS_PASSWORD=
 
-| Routing Key                      | Consommateurs cibles |
-| -------------------------------- | -------------------- |
-| `notification.envoyee`           | audit-service        |
-| `notification.echec`             | audit-service        |
-| `notification.alerte_ia.emise`   | audit-service        |
-| `notification.rapport_ia.envoye` | audit-service        |
+# RabbitMQ
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+RABBITMQ_EXCHANGE=al_mizan_events
+
+# Queues dédiées par domaine
+RABBITMQ_NOTIF_QUEUE=notification_queue
+RABBITMQ_NOTIF_AO_QUEUE=notification_ao_queue
+RABBITMQ_NOTIF_SOUMISSION_QUEUE=notification_soumission_queue
+RABBITMQ_NOTIF_EVALUATION_QUEUE=notification_evaluation_queue
+RABBITMQ_NOTIF_ATTRIBUTION_QUEUE=notification_attribution_queue
+RABBITMQ_NOTIF_RECOURS_QUEUE=notification_recours_queue
+RABBITMQ_NOTIF_IA_QUEUE=notification_ia_queue
+RABBITMQ_NOTIF_AUTH_QUEUE=notification_auth_queue
+
+# Rate Limiting
+THROTTLE_TTL=60
+THROTTLE_LIMIT=100
+
+# SMTP
+SMTP_HOST=localhost
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM_NAME=Al-Mizan
+SMTP_FROM_EMAIL=notifications@almizan.dz
+
+# Mode dégradé (ne pas bloquer si SMTP en échec)
+EMAIL_FAIL_OPEN=true
+```
+
+> ⚠️ En production, remplacer `localhost` par les noms de conteneurs. Configurer les credentials Firebase dans le conteneur.
 
 ---
 
-## API REST – Endpoints
+## API REST
 
-### Notifications
-
-| Méthode | Endpoint                             | Rôles             | Description           |
-| ------- | ------------------------------------ | ----------------- | --------------------- |
-| `POST`  | `/notifications`                     | ADMIN, SYSTEME    | Créer et envoyer      |
-| `GET`   | `/notifications`                     | ADMIN, CONTROLEUR | Lister toutes (admin) |
-| `GET`   | `/notifications/mes-notifications`   | Tous              | Mes notifications     |
-| `GET`   | `/notifications/non-lues/count`      | Tous              | Compteur non-lues     |
-| `GET`   | `/notifications/:id`                 | Tous              | Détail                |
-| `PATCH` | `/notifications/:id/lire`            | Tous              | Marquer comme lue     |
-| `PATCH` | `/notifications/marquer-toutes-lues` | Tous              | Tout marquer lu       |
-
-### Alertes IA
-
-| Méthode | Endpoint                    | Rôles             | Description        |
-| ------- | --------------------------- | ----------------- | ------------------ |
-| `POST`  | `/alertes-ia`               | ADMIN, SYSTEME    | Émettre une alerte |
-| `GET`   | `/alertes-ia`               | ADMIN, CONTROLEUR | Lister             |
-| `GET`   | `/alertes-ia/:id`           | ADMIN, CONTROLEUR | Détail             |
-| `PATCH` | `/alertes-ia/:id/acquitter` | ADMIN, CONTROLEUR | Acquitter          |
-| `PATCH` | `/alertes-ia/:id/resoudre`  | ADMIN, CONTROLEUR | Résoudre           |
-
-### Rapports IA
-
-| Méthode | Endpoint           | Rôles             | Description      |
-| ------- | ------------------ | ----------------- | ---------------- |
-| `POST`  | `/rapports-ia`     | ADMIN, SYSTEME    | Créer et envoyer |
-| `GET`   | `/rapports-ia`     | ADMIN, CONTROLEUR | Lister           |
-| `GET`   | `/rapports-ia/:id` | ADMIN, CONTROLEUR | Détail           |
-
-### Device Tokens (FCM)
-
-| Méthode  | Endpoint             | Rôles | Description           |
-| -------- | -------------------- | ----- | --------------------- |
-| `POST`   | `/device-tokens`     | Tous  | Enregistrer token FCM |
-| `GET`    | `/device-tokens`     | Tous  | Mes tokens            |
-| `DELETE` | `/device-tokens/:id` | Tous  | Désactiver un token   |
+Base URL (via Gateway) : `http://localhost:3000/notifications`  
+Base URL (directe) : `http://localhost:8010/notification-service/v1`  
+Swagger : `http://localhost:8010/notification-service/v1/docs`
 
 ### Préférences
 
-| Méthode | Endpoint       | Rôles | Description     |
-| ------- | -------------- | ----- | --------------- |
-| `GET`   | `/preferences` | Tous  | Mes préférences |
-| `PATCH` | `/preferences` | Tous  | Mettre à jour   |
+| Méthode  | Endpoint                              | Auth | Description                                   |
+|----------|---------------------------------------|------|-----------------------------------------------|
+| `GET`    | `/preferences/:userId`                | Oui  | Récupérer les préférences de notifications    |
+| `PATCH`  | `/preferences/:userId`                | Oui  | Mettre à jour les préférences                 |
+
+### Device Tokens (Push Android)
+
+| Méthode  | Endpoint                              | Auth | Description                                   |
+|----------|---------------------------------------|------|-----------------------------------------------|
+| `POST`   | `/device-tokens`                      | Oui  | Enregistrer un token FCM                      |
+| `DELETE` | `/device-tokens/:token`               | Oui  | Supprimer un token FCM                        |
+
+### Notifications
+
+| Méthode  | Endpoint                              | Auth | Description                                   |
+|----------|---------------------------------------|------|-----------------------------------------------|
+| `GET`    | `/notifications/:userId`              | Oui  | Historique des notifications d'un utilisateur |
+| `PATCH`  | `/notifications/:id/lire`             | Oui  | Marquer une notification comme lue            |
 
 ---
 
-## Tests
+## Messagerie RabbitMQ
+
+**Exchange** : `al_mizan_events` (type: `topic`, durable: `true`)
+
+### Événements consommés (par queue dédiée)
+
+| Queue                             | Routing Keys consommées                                                            |
+|-----------------------------------|------------------------------------------------------------------------------------|
+| `notification_auth_queue`         | `notifications.user` (USER_REGISTERED)                                             |
+| `notification_ao_queue`           | `ao.published`, `ao.annule`, `ao.attribution.provisoire`, `ao.attribution.definitive` |
+| `notification_soumission_queue`   | `soumission.deposee`, `soumission.retiree`                                          |
+| `notification_evaluation_queue`   | `evaluation.cloturee`                                                              |
+| `notification_attribution_queue`  | Attribution events                                                                  |
+| `notification_recours_queue`      | `recours.depose`, `recours.accepte`, `recours.rejete`                              |
+| `notification_ia_queue`           | Alertes IA (gré-à-gré, conformité)                                                 |
+| `notification_queue`              | Fallback général                                                                    |
+
+### Événements de notification par action métier
+
+| Événement source                  | Destinataires                        | Canal(aux)            |
+|-----------------------------------|--------------------------------------|-----------------------|
+| `notifications.user` (inscription)| Utilisateur inscrit                  | Email                 |
+| `ao.published`                    | Tous les OE enregistrés              | Email + Push          |
+| `ao.attribution.provisoire`       | Tous les soumissionnaires de l'AO    | Email + Push          |
+| `ao.attribution.definitive`       | OE attributaire                      | Email + Push          |
+| `ao.annule`                       | Soumissionnaires + SC                | Email + Push          |
+| `soumission.deposee`              | OE (confirmation de dépôt)           | Email                 |
+| `recours.depose`                  | SC concerné                          | Email                 |
+| `recours.accepte`/`rejete`        | OE recoursant                        | Email + Push          |
+
+---
+
+## Commandes utiles
+
+### Développement local
 
 ```bash
-# Tests unitaires
+yarn install
+yarn start:dev      # Hot-reload NestJS
+yarn build          # Compilation TypeScript
+yarn start:prod     # Production
+```
+
+### Base de données
+
+```bash
+yarn prisma:generate          # Générer le client Prisma
+yarn prisma:migrate:dev       # Créer une migration
+yarn prisma:migrate:deploy    # Déployer les migrations
+yarn prisma:seed              # Seeder les données initiales
+yarn prisma:studio            # Prisma Studio
+```
+
+### Tests
+
+```bash
 yarn test
-
-# Tests unitaires avec coverage
-yarn test:cov
-
-# Tests e2e (nécessite une BDD de test)
 yarn test:e2e
+yarn test:cov
 ```
 
 ---
 
-## Docker Compose complet
+## Docker
+
+### Build de l'image
 
 ```bash
-# Tout démarrer (app + infra)
-docker compose up -d
-
-# Avec pgAdmin
-docker compose --profile tools up -d
-
-# Logs
-docker compose logs -f notification-service
-
-# Stopper
-docker compose down
-
-# Reset complet (données supprimées)
-docker compose down -v
+docker build -t al-mizan-notification-service .
 ```
 
-**Interfaces disponibles :**
+### Notes importantes sur le Dockerfile
 
-- API : [http://localhost:8010/notification-service/v1/docs](http://localhost:8010/notification-service/v1/docs)
-- RabbitMQ : [http://localhost:15672](http://localhost:15672) (guest/guest)
-- pgAdmin : [http://localhost:5051](http://localhost:5051) (admin@almizan.dz / admin123)
+- Image de base : `node:20-alpine`
+- Utilise `prisma migrate deploy` (migrations versionnées).
+- Firebase credentials à injecter via variable d'environnement ou volume monté.
 
----
-
-## Kubernetes
+### Déploiement via docker-compose
 
 ```bash
-cd k8s/
-kubectl apply -f namespace.yaml
-kubectl apply -f secret.yaml
-kubectl apply -f configmap.yaml
-kubectl apply -f postgres.yaml
-kubectl apply -f migration-job.yaml
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-kubectl apply -f hpa.yaml
+docker-compose up -d notification-service
+docker-compose logs -f notification-service
 ```
 
 ---
 
-## Structure du projet
-
-```
-notification-service/
-├── src/
-│   ├── main.ts                         # Bootstrap NestJS
-│   ├── app.module.ts                   # Module racine
-│   ├── config/app.config.ts            # Configuration centralisée
-│   ├── common/                         # Partagé (filtres, guards, décorateurs)
-│   │   ├── decorators/
-│   │   ├── filters/
-│   │   ├── guards/
-│   │   └── interceptors/
-│   ├── prisma/                         # PrismaService (PostgreSQL)
-│   ├── redis/                          # RedisService (cache + déduplication)
-│   ├── rabbitmq/                       # Bus d'événements
-│   │   ├── consumers/                  # 6 consumers (ao, soumission, eval, recours, auth, ia)
-│   │   └── producers/                  # 1 producer (événements émis)
-│   ├── channels/                       # Canaux d'envoi
-│   │   ├── email/                      # Nodemailer + templates HTML
-│   │   ├── sms/                        # InfoBip + Twilio (Djezzy/Ooredoo/Mobilis)
-│   │   └── push/                       # Firebase FCM (Android)
-│   ├── notifications/                  # CRUD + dispatch multi-canal
-│   ├── alertes-ia/                     # Alertes IA (acquittement, résolution)
-│   ├── rapports-ia/                    # Rapports périodiques (email PDF)
-│   ├── device-tokens/                  # Tokens FCM Android
-│   └── preferences/                   # Préférences par canal/catégorie
-├── prisma/
-│   ├── schema.prisma                   # Schéma PostgreSQL
-│   └── seed.ts                         # Données de test
-├── test/
-│   ├── app.e2e-spec.ts                 # Tests e2e
-│   └── jest-e2e.json
-├── k8s/                                # Manifests Kubernetes
-├── Dockerfile                          # Multi-stage build
-├── docker-compose.yml                  # Dev local
-└── README.md
-```
-
----
-
-## Conformité
-
-- **Loi n°18-07** : Chiffrement AES-256 des données PII au repos, hébergement souverain algérien
-- **Loi n°23-12** : Notifications légales (délai recours 10j, attribution provisoire/définitive)
-- **OWASP** : Rate limiting, validation stricte (class-validator), headers sécurité
+*Maintenu par l'équipe Al-Mizan — voir `al-mizan-deployments` pour la configuration de déploiement complète.*
