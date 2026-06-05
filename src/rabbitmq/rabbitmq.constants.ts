@@ -15,6 +15,7 @@ export const ROUTING_KEY = {
   AO_CLOTURE: 'ao.cloture',
   AO_ATTRIBUTION_PROVISOIRE: 'ao.attribution.provisoire',
   AO_ATTRIBUTION_DEFINITIVE: 'ao.attribution.definitive',
+  AO_CLARIFICATION_REPONDUE: 'ao.clarification.repondue',
   SOUMISSION_DEPOSEE: 'soumission.deposee',
   SOUMISSION_REJETEE: 'soumission.rejetee',
   SOUMISSION_EVALUEE: 'soumission.evaluee',
