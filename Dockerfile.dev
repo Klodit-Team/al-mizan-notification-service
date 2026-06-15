@@ -1,0 +1,10 @@
+FROM node:20-alpine
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY package.json yarn.lock prisma.config.ts ./
+COPY prisma ./prisma/
+RUN yarn install
+RUN yarn prisma:generate
+EXPOSE 8010
+ENV NODE_ENV=development
+CMD ["sh", "-c", "yarn prisma:migrate:deploy 2>/dev/null || true && yarn start:dev"]
